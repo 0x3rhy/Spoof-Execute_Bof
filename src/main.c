@@ -121,8 +121,8 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     //Convert program name to NtPathName
     if (!RtlDosPathNameToNtPathName_U(program, &NtImagePath, NULL, NULL))
     {
-	    internal_printf("Error: Unable to convert path name\n");
-	    goto cleanup;
+        internal_printf("Error: Unable to convert path name\n");
+	return;
     }
 
     //Parse out program name and increment pointer by one to skip the leading backslash
@@ -138,7 +138,7 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     int commandline_len = wcslen(program) + wcslen(commandLineArgs);
     if (commandline_len > 1024)
     {
-	    internal_printf("Current command line length: %d, exceeding the maximum limit of 1024.\n",commandline_len);
+	internal_printf("Current command line length: %d, exceeding the maximum limit of 1024.\n",commandline_len);
         return;
     }
 
@@ -171,7 +171,7 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     NTSTATUS ntresult = RtlCreateProcessParameters(&ProcessParameters, &SpoofedPath, NULL, &CurrentDirectory, &CommandLine, NULL, NULL, NULL, NULL, NULL);
     if(ntresult != STATUS_SUCCESS)
     {
-	    internal_printf("RtlCreateProcessParameters failed: %X. Cleaning up and aborting.\n", ntresult);
+	internal_printf("RtlCreateProcessParameters failed: %X. Cleaning up and aborting.\n", ntresult);
         goto cleanup;
     }
 
@@ -179,7 +179,7 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     ntresult = RtlCreateUserProcess(&NtImagePath, OBJ_CASE_INSENSITIVE, ProcessParameters, NULL, NULL, hParent, FALSE, NULL, NULL, &ProcessInfo);
     if(ntresult != STATUS_SUCCESS)
     {
-	    internal_printf("RtlCreateUserProcess failed: %X. Cleaning up and aborting.\n", ntresult);
+	internal_printf("RtlCreateUserProcess failed: %X. Cleaning up and aborting.\n", ntresult);
         goto cleanup;
     }
 
