@@ -5,6 +5,7 @@
 #define NtCurrentThread()         ((HANDLE)(LONG_PTR)-2)
 #define STATUS_SUCCESS 0x00000000
 
+//void ___chkstk_ms() { /* needed to resolve linker errors for bof_extract */ }
 
 int my_toLower(int x)
 {
@@ -136,14 +137,14 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     RtlInitUnicodeString(&SpoofedPath, program);
 
     int commandline_len = wcslen(program) + wcslen(commandLineArgs);
-    if (commandline_len > 1024)
+    if (commandline_len > 8192)
     {
-	internal_printf("Current command line length: %d, exceeding the maximum limit of 1024.\n",commandline_len);
+	internal_printf("Current command line length: %d, exceeding the maximum limit of 8192.\n",commandline_len);
         return;
     }
 
-    wchar_t cline[1024] = {0};
-    swprintf_s(cline, sizeof(cline), L"%ls%ls", program, commandLineArgs);
+    wchar_t * cline = intAlloc(8192);
+    swprintf_s(cline, 8192, L"%ls%ls", program, commandLineArgs);
     RtlInitUnicodeString(&CommandLine, cline);
 
     //Assemble current directory for process parameters
@@ -188,6 +189,8 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
 
     internal_printf("Successfully spawned %ls with PID %d\n", procname, GetProcessId(ProcessInfo.Process));
 
+    goto cleanup;
+
 cleanup:
     //Cleanup handles and process parameters
     if(ProcessParameters)
@@ -199,6 +202,7 @@ cleanup:
     if(hParent)
         CloseHandle(hParent);
 
+    intFree(cline);
 }
 
 
