@@ -92,6 +92,8 @@ HANDLE find_process_by_name(const wchar_t* processname) //Find PID of specified 
 void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
 {
     HANDLE hParent = NULL;
+	DWORD currentSessionId = 0;
+    DWORD targetSessionId = 0;
     //Retrieve a handle to parent process for PPID spoofing if one was supplied
     /*if(wcslen(parentname) > 0)
     {
@@ -104,6 +106,15 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     }*/
 
     // Get ParenetID Handle
+	ProcessIdToSessionId(GetCurrentProcessId(), &currentSessionId);
+	ProcessIdToSessionId(ppid, &targetSessionId);
+	
+	// Determine whether the ppid session is the same as the current session. If the current process has UAC privileges, it can be executed successfully
+	if(currentSessionId != targetSessionId) {
+		internal_printf("The parent PID session is different from the current session, and the spawn failed\n", ppid, GetLastError());
+		return;
+	}
+	
     hParent = OpenProcess(PROCESS_ALL_ACCESS, FALSE, ppid);
 
     if(!hParent)
