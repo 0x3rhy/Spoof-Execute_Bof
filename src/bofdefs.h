@@ -10,6 +10,7 @@ NTSYSAPI NTSTATUS NTAPI NTDLL$RtlCreateProcessParameters(PRTL_USER_PROCESS_PARAM
 NTSYSAPI NTSTATUS NTAPI NTDLL$RtlCreateUserProcess(PUNICODE_STRING NtImagePathName, ULONG AttributesDeprecated, PRTL_USER_PROCESS_PARAMETERS ProcessParameters, PSECURITY_DESCRIPTOR ProcessSecurityDescriptor, PSECURITY_DESCRIPTOR ThreadSecurityDescriptor, HANDLE ParentProcess, BOOLEAN InheritHandles, HANDLE DebugPort, HANDLE TokenHandle, PRTL_USER_PROCESS_INFORMATION ProcessInformation);
 NTSYSCALLAPI NTSTATUS NTAPI NTDLL$NtResumeThread(HANDLE ThreadHandle, PULONG PreviousSuspendCount);
 NTSYSAPI NTSTATUS NTAPI NTDLL$RtlDestroyProcessParameters(PRTL_USER_PROCESS_PARAMETERS ProcessParameters);
+WINBASEAPI NTSTATUS WINAPI NTDLL$RtlAdjustPrivilege(ULONG Privilege, BOOL Enable, BOOL CurrentThread, PULONG Enabled);
 
 WINBASEAPI HMODULE WINAPI KERNEL32$LoadLibraryA (LPCSTR lpLibFileName);
 WINBASEAPI FARPROC WINAPI KERNEL32$GetProcAddress (HMODULE hModule, LPCSTR lpProcName);
@@ -68,6 +69,7 @@ WINBASEAPI void* __cdecl MSVCRT$memmove(void *dest, const void *src, size_t coun
 #define RtlCreateUserProcess                NTDLL$RtlCreateUserProcess
 #define NtResumeThread                      NTDLL$NtResumeThread
 #define RtlDestroyProcessParameters         NTDLL$RtlDestroyProcessParameters
+#define RtlAdjustPrivilege                  NTDLL$RtlAdjustPrivilege
 
 #define LoadLibraryA KERNEL32$LoadLibraryA
 #define GetProcAddress KERNEL32$GetProcAddress

